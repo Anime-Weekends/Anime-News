@@ -15,6 +15,7 @@ mongo_client = pymongo.MongoClient(MONGO_URI)
 db = mongo_client["AnimeNewsBot"]
 user_settings_collection = db["user_settings"]
 global_settings_collection = db["global_settings"]
+admins_col = db["admins"]   # Collection for dynamic admins
 
 # Pyrogram app
 app = Client("AnimeNewsBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -115,6 +116,62 @@ async def remove_news_channel(client, message):
     channels.remove(channel)
     global_settings_collection.update_one({"_id": "config"}, {"$set": {"news_channels": channels}})
     await app.send_message(message.chat.id, f"Removed @{channel} from the list.")
+
+
+# ----------------------------
+# Admin Management Commands
+# ----------------------------
+
+def is_admin(user_id: int) -> bool:
+    """
+    Check if the user is an admin either in static ADMINS list or dynamic admins in MongoDB.
+    """
+    return user_id in ADMINS or admins_col.find_one({"user_id": user_id}) is not None
+
+
+@app.on_message(filters.command("addadmin") & filters.private)
+async def add_admin(client, message):
+    if not is_admin(message.from_user.id):
+        return await message.reply("You're not authorized to add admins.")
+    if len(message.command) != 2:
+        return await message.reply("Usage: /addadmin <user_id>")
+    try:
+        new_admin_id = int(message.command[1])
+        if is_admin(new_admin_id):
+            return await message.reply("This user is already an admin.")
+        admins_col.insert_one({"user_id": new_admin_id})
+        await message.reply(f"Added user {new_admin_id} as an admin.")
+    except ValueError:
+        await message.reply("Invalid user ID.")
+
+
+@app.on_message(filters.command("removeadmin") & filters.private)
+async def remove_admin(client, message):
+    if not is_admin(message.from_user.id):
+        return await message.reply("You're not authorized to remove admins.")
+    if len(message.command) != 2:
+        return await message.reply("Usage: /removeadmin <user_id>")
+    try:
+        remove_id = int(message.command[1])
+        if remove_id in ADMINS:
+            return await message.reply("You cannot remove a static admin from config.")
+        result = admins_col.delete_one({"user_id": remove_id})
+        if result.deleted_count:
+            await message.reply(f"Removed user {remove_id} from admins.")
+        else:
+            await message.reply("This user is not a dynamic admin.")
+    except ValueError:
+        await message.reply("Invalid user ID.")
+
+
+@app.on_message(filters.command("listadmins") & filters.private)
+async def list_admins(client, message):
+    if not is_admin(message.from_user.id):
+        return await message.reply("You're not authorized to view admins.")
+    static_admins = [str(uid) for uid in ADMINS]
+    dynamic_admins = [str(admin["user_id"]) for admin in admins_col.find()]
+    all_admins = static_admins + dynamic_admins
+    await message.reply("**Current Admins:**\n" + "\n".join(all_admins))
 
 
 async def main():
