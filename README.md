@@ -49,14 +49,13 @@
   
 ## ᴄᴏᴍᴍᴍᴀɴᴅs
 ```
-start - Check if the bot is running.
-help - Check if the help
-about - Check if the about 
-ban - user ban [FOR ADMINS USE ONLY]
-unban - user unban [FOR ADMINS USE ONLY]
-users - Check bot users [FOR ADMINS USE ONLY]
-broadcast - Message Broadcast command [FOR ADMINS USE ONLY]
-restart - To restart the bot [FOR ADMINS USE ONLY]
+start - Cʜᴇᴄᴋ ɪᴀᴍ ᴀʟɪᴠᴇ ᴏʀ ɴᴏᴛ 
+news - Mᴀsᴛᴇʀ, ᴀᴅᴅ ᴀ ᴄʜᴀɴɴᴇʟ ᴀɴᴅ ʟᴇᴛ ʏᴏᴜʀ ǫᴜᴇᴇɴ sʟᴀʏ.
+listnews - Mʏ ᴍᴀsᴛᴇʀ, ʏᴏᴜ ᴄᴀɴ sᴇᴇ ᴡʜᴇɴ ʏᴏᴜʀ ǫᴜᴇᴇɴ ɪs sʟᴀʏɪɴɢ.
+removenews - Mᴀsᴛᴇʀ, ʀᴇᴍᴏᴠᴇ ᴍᴇ ғʀᴏᴍ ᴛʜɪs ᴄʜᴀɴɴᴇʟ ʙᴇᴄᴀᴜsᴇ ʏᴏᴜʀ sʟᴀʏ ǫᴜᴇᴇɴ ɪs ʙᴏʀᴇᴅ.
+addadmin - Gᴇᴛ ᴍᴇ ᴀ ɴᴇᴡ ᴍᴀsᴛᴇʀ, ᴍʏ ᴅᴇᴀʀ ᴅᴀᴅᴅʏ.
+removeadmin - Eᴡᴡ, ɪ ᴡᴏɴ'ᴛ ᴡᴏʀᴋ ғᴏʀ ʏᴏᴜ.
+listadmins - Tʜᴇsᴇ ᴀʀᴇ ᴍʏ ᴄᴜᴛᴇ ᴍᴀsᴛᴇʀs ᴡʜᴏ ᴄᴀʟʟ ᴍᴇ sʟᴀʏ ǫᴜᴇᴇɴ.
 ```
 </details>
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
