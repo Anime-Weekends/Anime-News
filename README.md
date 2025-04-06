@@ -61,7 +61,7 @@ listadmins - Tʜᴇsᴇ ᴀʀᴇ ᴍʏ ᴄᴜᴛᴇ ᴍᴀsᴛᴇʀs ᴡʜᴏ �
 <p align="center">
 
 <h3 align="center">
-    ─「 REXY 」─
+    ─「 <b>. <a href='https://t.me/RexySama'>REXY SAMA ❤️</a>.</b> 」─
 </h3>
 
 <p align="center">
