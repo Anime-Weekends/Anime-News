@@ -1,6 +1,10 @@
 # 𝗖𝗔𝗡𝗧𝗔𝗥𝗘𝗟𝗟𝗔 𝗡𝗘𝗪𝗦 𝗕𝗢𝗧
 
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
+
 ![Anime Image](https://i.ibb.co/ynjcqYdZ/photo-2025-04-06-20-48-47-7490304985767346192.jpg)
+
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
 
   <h1 align="center"></h1>
 <p align="center"> 
@@ -15,7 +19,6 @@
 
 <details><summary><b> - ғᴇᴀᴛᴜʀᴇs :</b></summary>
 
-<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
   
 ## ғᴇᴀᴛᴜʀᴇs
 ```
