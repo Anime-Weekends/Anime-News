@@ -1,4 +1,7 @@
+import asyncio
+import feedparser
 from pyrogram import Client
+
 async def fetch_and_send_news(app: Client, db, global_settings_collection, urls):
     config = global_settings_collection.find_one({"_id": "config"})
     if not config or "news_channel" not in config:
@@ -32,3 +35,12 @@ async def fetch_and_send_news(app: Client, db, global_settings_collection, urls)
                     print(f"Sent news: {entry.title}")
                 except Exception as e:
                     print(f"Error sending news message: {e}")
+
+# Background loop function
+async def news_feed_loop(app: Client, db, global_settings_collection, urls):
+    while True:
+        try:
+            await fetch_and_send_news(app, db, global_settings_collection, urls)
+        except Exception as e:
+            print(f"Error in news_feed_loop: {e}")
+        await asyncio.sleep(300)  # Wait 5 minutes
