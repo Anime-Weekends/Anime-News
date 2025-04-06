@@ -1,7 +1,5 @@
 # Anime News Telegram Bot
 
-This Telegram bot fetches anime news from multiple sources like MyAnimeList, Crunchyroll, and TheAnimeDaily, and posts them in your chosen Telegram channel or group. You can use this bot to create an anime news channel that automatically updates with the latest news.
-
 ![Anime Image](https://i.ibb.co/ynjcqYdZ/photo-2025-04-06-20-48-47-7490304985767346192.jpg)
 
   <h1 align="center"></h1>
@@ -16,24 +14,13 @@ This Telegram bot fetches anime news from multiple sources like MyAnimeList, Cru
 <p align="center"><a href="https://dashboard.heroku.com/new?template=https://github.com/Codeflix-Bots/AutoRenameBot"> <img src="https://img.shields.io/badge/Deploy%20On%20Heroku-black?style=for-the-badge&logo=heroku" width="220" height="38.45"/></a></p>
 
 <details><summary><b> - ғᴇᴀᴛᴜʀᴇs :</b></summary>
+
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">
   
 ## ғᴇᴀᴛᴜʀᴇs
 ```
-- Has a custom Start-up pic.
-- Force subscribe available.
-- Superfast download and stream links.
-- No ads in generated links.
-- Superfast interface.
-- Along with the links you also get file information like name,size ,etc.
-- Updates channel Support.
-- Mongodb database support for broadcasting.
-- User DC Check.
-- All unwanted code removed.
-- file limit 
-- Fully modified repo
-- Deploy To Koyeb + Heroku +etc...
-- [Developer support](https://telegram.me/AV_SUPPORT_GROUP) 24x7
-- And many more... 
+• ᴛʜɪs ᴛᴇʟᴇɢʀᴀᴍ ʙᴏᴛ ғᴇᴛᴄʜᴇs ᴀɴɪᴍᴇ ɴᴇᴡs ғʀᴏᴍ ᴍᴜʟᴛɪᴘʟᴇ sᴏᴜʀᴄᴇs ʟɪᴋᴇ ᴍʏᴀɴɪᴍᴇʟɪsᴛ, ᴄʀᴜɴᴄʜʏʀᴏʟʟ, ᴀɴᴅ ᴛʜᴇᴀɴɪᴍᴇᴅᴀɪʟʏ, ᴀɴᴅ ᴘᴏsᴛs ᴛʜᴇᴍ ɪɴ ʏᴏᴜʀ ᴄʜᴏsᴇɴ ᴛᴇʟᴇɢʀᴀᴍ ᴄʜᴀɴɴᴇʟ ᴏʀ ɢʀᴏᴜᴘ. ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ᴛʜɪs ʙᴏᴛ ᴛᴏ ᴄʀᴇᴀᴛᴇ ᴀɴ ᴀɴɪᴍᴇ ɴᴇᴡs ᴄʜᴀɴɴᴇʟ ᴛʜᴀᴛ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴜᴘᴅᴀᴛᴇs ᴡɪᴛʜ ᴛʜᴇ ʟᴀᴛᴇsᴛ ɴᴇᴡs.
+
 ```
 <b>ᴛᴏ ᴋɴᴏᴡ ᴀʙᴏᴜᴛ ᴀʟʟ ғᴇᴀᴛᴜʀᴇs, ᴊᴏɪɴ ᴏᴜʀ  <a href='https://t.me/EmitingStars_Botz'>ᴜᴘᴅᴀᴛᴇs ᴄʜᴀɴɴᴇʟ</a>.</b>
 </details>
