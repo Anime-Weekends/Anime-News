@@ -4,7 +4,7 @@ API_ID = "28744454" #API ID get it from telegram.org
 
 API_HASH = "debd37cef0ad1a1ce45d0be8e8c3c5e7" #API HASH get it from telegram.org
 
-BOT_TOKEN = "8145018505:AAGaFGnFSPelJCf70gFMwPx7fbH9U6LMQP0" #Bot Token get it from @BotFather
+BOT_TOKEN = "7773900178:AAEQEQAXahfYAVsol1EUcwYPKa0Or2cPCdg" #Bot Token get it from @BotFather
 
 URL_A = "http://myanimelist.net/rss.php?type=news" #News RSS Feed Url 2
 
