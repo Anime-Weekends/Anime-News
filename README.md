@@ -1,4 +1,4 @@
-# Anime News Telegram Bot
+# 𝗖𝗔𝗡𝗧𝗔𝗥𝗘𝗟𝗟𝗔 𝗡𝗘𝗪𝗦 𝗕𝗢𝗧
 
 ![Anime Image](https://i.ibb.co/ynjcqYdZ/photo-2025-04-06-20-48-47-7490304985767346192.jpg)
 
@@ -32,17 +32,8 @@
 * `BOT_TOKEN` - Get bot token from <a href="https://t.me/BotFather" target="/blank">Bot Father</a>
 * `API_ID` - Get api id from <a href="https://my.telegram.org" target="/blank">Telegram Auth</a>
 * `API_HASH` - Get api hash from <a href="https://my.telegram.org" target="/blank">Telegram Auth</a>
-* `ADMINS` - Bot admin/owner user id Separate multiple Admins by space.
-* `BOT_USERNAME` : Your Bot Username Without @
 * `DATABASE_URI` - Mongo Database URL from <a href="https://cloud.mongodb.com" target="/blank">Mongo DB</a>
-* `DATABASE_NAME` - Your database name from mongoDB. `(Optional)`
-* `BIN_CHANNEL` : Create a new channel (private/public) and add that channel id in this field.
-* `LOG_CHANNEL` :  A channel to log the activities of bot. Make sure bot is an admin in the channel.
-* `AUTH_CHANNEL` - Your force sub channel with -100 `Optional`
 * `PICS` - Start message photo. `Optional`
-* `FQDN` : Your Server App Link With https:// and in last make sure one / is given.
-* `PORT` : The port that you want your webapp to be listened to. Defaults to `2626`
-* `BANNED_CHANNELS` : Put IDs of Banned Channels where bot will not work. You can add multiple IDs & separate with <kbd>Space</kbd>.
 ```
 </details>
 <details><summary><b> - ᴄᴏᴍᴍᴍᴀɴᴅs :</summary>
