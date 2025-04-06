@@ -1,3 +1,4 @@
+from pyrogram import Client
 async def fetch_and_send_news(app: Client, db, global_settings_collection, urls):
     config = global_settings_collection.find_one({"_id": "config"})
     if not config or "news_channel" not in config:
