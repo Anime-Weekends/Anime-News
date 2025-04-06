@@ -5,7 +5,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import threading
 import pymongo
 import feedparser
-from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI, ADMINS
+from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI
 
 from webhook import start_webhook
 from modules.rss.rss import fetch_and_send_news
