@@ -8,7 +8,7 @@ async def fetch_and_send_news(app: Client, db, global_settings_collection, urls)
         return
 
     news_channel = "@" + config["news_channel"]
-    sticker_file_id = "CAACAgUAAxkBAAEB..."  # Replace this with your actual sticker file ID
+    sticker_file_id = "CAACAgUAAxkBAAEOP1Fn8vE65jQoZU-WKUd9NIZQy_W8CgAC2xQAAkczUFfhRns35IURtjYE"  # Replace this with your actual sticker file ID
 
     for url in urls:
         feed = await asyncio.to_thread(feedparser.parse, url)
