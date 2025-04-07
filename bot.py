@@ -84,7 +84,7 @@ def is_admin(user_id: int) -> bool:
 @app.on_message(filters.command("news"))
 async def connect_news(client, message):
     chat_id = message.chat.id
-    if not is_admin(message.from_user.id):
+    if not message.from_user or not is_admin(message.from_user.id):
         return await app.send_message(chat_id, "You do not have permission to use this command.")
     if len(message.text.split()) < 2:
         return await app.send_message(chat_id, "Please provide a channel username (without @).")
