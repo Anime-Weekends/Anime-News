@@ -1,11 +1,11 @@
 from flask import Flask, request
-from pyrogram import Client
 import asyncio
-from config import BOT_TOKEN  # <-- Add this line
+from config import BOT_TOKEN
 
-app = Flask(__name__)
+# Initialize Flask app
+flask_app = Flask(__name__)
 
-@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+@flask_app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = request.get_json(force=True)
     loop = asyncio.new_event_loop()
@@ -19,4 +19,4 @@ def webhook():
     return "OK", 200
 
 def start_webhook():
-    app.run(host="0.0.0.0", port=8080)
+    flask_app.run(host="0.0.0.0", port=8080)
