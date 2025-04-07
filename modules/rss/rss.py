@@ -1,49 +1,52 @@
 # rss.py
 
 import feedparser
+import html
+import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
 
-def fetch_news(feed_url):
-    feed = feedparser.parse(feed_url)
-    news_items = []
+def fetch_news(feed_url, limit=3):
+    parsed = feedparser.parse(feed_url)
+    entries = parsed.entries[:limit]
+    news_list = []
 
-    for entry in feed.entries[:3]:  # Limit to 3 latest
-        title = entry.title
-        link = entry.link
-        published = format_date(entry.get("published", "Unknown"))
-        summary = clean_summary(entry.summary)
-        image = extract_image(entry.summary)
+    for entry in entries:
+        title = html.unescape(entry.get("title", "No Title"))
+        link = entry.get("link", "")
+        summary = html.unescape(entry.get("summary", ""))
+        published = entry.get("published", "No date")
 
-        caption = (
-            f"**📰 {title}**\n\n"
-            f"**🗓️ Published:** `{published}`\n"
-            f"**🌐 Source:** [Visit Link]({link})\n\n"
-            f"__{summary}__"
-        )
+        image_url = extract_image_from_summary(summary) or extract_image_from_page(link)
 
-        news_items.append({
+        clean_summary = clean_html(summary)
+        text = f"**{title}**\n\n{clean_summary}\n\n**Published:** `{published}`"
+
+        news_list.append({
             "title": title,
             "link": link,
-            "text": caption,
-            "image": image
+            "summary": clean_summary,
+            "published": published,
+            "text": text,
+            "image": image_url
         })
 
-    return news_items
+    return news_list
 
-def extract_image(html_summary):
-    soup = BeautifulSoup(html_summary, "html.parser")
+def clean_html(raw_html):
+    soup = BeautifulSoup(raw_html, "html.parser")
+    text = soup.get_text()
+    return text.strip()[:1000] + "..." if len(text) > 1000 else text
+
+def extract_image_from_summary(summary):
+    soup = BeautifulSoup(summary, "html.parser")
     img = soup.find("img")
-    return img["src"] if img and "src" in img.attrs else None
+    return img["src"] if img else None
 
-def clean_summary(summary_html):
-    soup = BeautifulSoup(summary_html, "html.parser")
-    text = soup.get_text(separator=" ", strip=True)
-    return text[:500] + "..." if len(text) > 500 else text
-
-def format_date(date_str):
+def extract_image_from_page(url):
     try:
-        dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
-        return dt.strftime("%d %b %Y, %H:%M")
+        res = requests.get(url, timeout=5)
+        soup = BeautifulSoup(res.content, "html.parser")
+        meta_img = soup.find("meta", property="og:image")
+        return meta_img["content"] if meta_img else None
     except:
-        return date_str
+        return None
