@@ -1,6 +1,6 @@
 # bot.py
 
-from pyrogram import Client, filters
+from pyrofork import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from config import *
 from rss import fetch_news
@@ -15,27 +15,23 @@ rss_col = db["rssfeeds"]
 
 app = Client("autonews", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Ensure owner is in admin list
 if not admin_col.find_one({"user_id": OWNER_ID}):
     admin_col.insert_one({"user_id": OWNER_ID})
 
 def is_admin(user_id):
     return admin_col.find_one({"user_id": user_id}) is not None
 
-# /start
 @app.on_message(filters.command("start"))
 async def start_cmd(client, message: Message):
     await message.reply_photo(
         START_PIC,
-        caption=f"**Hello {message.from_user.first_name}!**\n\n"
-                "I'm your Anime Auto News Bot!\n\nUse /help to get started.",
+        caption=f"**Hello {message.from_user.first_name}!**\nI'm your Anime Auto News Bot!\nUse /help to get started.",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("News Feed", url="https://myanimelist.net/news")],
             [InlineKeyboardButton("Help", callback_data="help")]
         ])
     )
 
-# /help
 @app.on_message(filters.command("help"))
 async def help_cmd(client, message: Message):
     await message.reply_photo(
@@ -55,7 +51,6 @@ async def help_cmd(client, message: Message):
         ])
     )
 
-# /news
 @app.on_message(filters.command("news"))
 async def news_cmd(client, message: Message):
     if message.chat.type in ["supergroup", "group"]:
@@ -73,7 +68,6 @@ async def news_cmd(client, message: Message):
             else:
                 await message.reply(item["text"], reply_markup=btn)
 
-# /anime
 @app.on_message(filters.command("anime"))
 async def anime_cmd(client, message: Message):
     query = message.text.split(maxsplit=1)
@@ -96,7 +90,6 @@ async def anime_cmd(client, message: Message):
     btn = InlineKeyboardMarkup([[InlineKeyboardButton("More Info", url=anime["url"])]])
     await message.reply_photo(anime["images"]["jpg"]["image_url"], caption=text, reply_markup=btn)
 
-# /manga
 @app.on_message(filters.command("manga"))
 async def manga_cmd(client, message: Message):
     query = message.text.split(maxsplit=1)
@@ -119,7 +112,6 @@ async def manga_cmd(client, message: Message):
     btn = InlineKeyboardMarkup([[InlineKeyboardButton("More Info", url=manga["url"])]])
     await message.reply_photo(manga["images"]["jpg"]["image_url"], caption=text, reply_markup=btn)
 
-# Admin Commands
 @app.on_message(filters.command("addadmin") & filters.user(OWNER_ID))
 async def add_admin(client, message: Message):
     if len(message.command) < 2:
@@ -151,7 +143,6 @@ async def admin_list(client, message: Message):
     admins = [str(a["user_id"]) for a in admin_col.find()]
     await message.reply(f"**Admins:**\n" + "\n".join(admins))
 
-# RSS Commands
 @app.on_message(filters.command("addrss"))
 async def addrss(client, message: Message):
     if not is_admin(message.from_user.id):
@@ -181,5 +172,4 @@ async def listrss(client, message: Message):
         return await message.reply("No RSS feeds added.")
     await message.reply("**RSS Feeds:**\n" + "\n".join(feeds))
 
-# Run
 app.run()
