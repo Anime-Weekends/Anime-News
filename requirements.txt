@@ -1,7 +1,7 @@
-aiohttp
-pyrofork
+pyrofork==2.0.2
+Flask==3.0.2
+dnspython
 pymongo
-python-dotenv
-flask
-tgcrypto
 feedparser
+beautifulsoup4
+requests
