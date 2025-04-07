@@ -1,4 +1,4 @@
-git+https://github.com/Awesome-RJ/pyrofork.git
+https://github.com/Awesome-RJ/pyrofork/archive/refs/heads/main.zip
 Flask==3.0.2
 requests==2.31.0
 feedparser==6.0.11
