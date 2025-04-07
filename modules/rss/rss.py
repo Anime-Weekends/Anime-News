@@ -1,58 +1,51 @@
 # rss.py
 
-import aiohttp
 import feedparser
-from datetime import datetime, timedelta
+import requests
+from bs4 import BeautifulSoup
 
-posted_links = set()  # Memory cache to avoid reposting same news
+def fetch_news(feed_url):
+    parsed_feed = feedparser.parse(feed_url)
+    news_items = []
 
-async def fetch_rss_feed(session, url):
-    try:
-        async with session.get(url) as response:
-            return feedparser.parse(await response.text())
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return None
+    for entry in parsed_feed.entries[:5]:  # Fetch latest 5
+        title = entry.get("title", "No title")
+        link = entry.get("link", "")
+        published = entry.get("published", "Unknown date")
+        author = entry.get("author", "Unknown author")
+        categories = [cat.term for cat in entry.get("tags", [])]
+        category_text = ", ".join(categories) if categories else "None"
 
-def filter_recent_entries(entries, hours=6):
-    now = datetime.utcnow()
-    cutoff = now - timedelta(hours=hours)
-    recent = []
+        # Clean HTML summary
+        summary_html = entry.get("summary", "")
+        summary_text = BeautifulSoup(summary_html, "html.parser").text.strip()
 
-    for entry in entries:
-        published = entry.get("published_parsed")
-        if published:
-            published_dt = datetime(*published[:6])
-            if published_dt > cutoff:
-                recent.append(entry)
-    return recent
+        # Truncate long summary
+        if len(summary_text) > 500:
+            summary_text = summary_text[:500] + "... [Read more](" + link + ")"
 
-async def fetch_and_send_news(app, db, global_settings_collection):
-    config = global_settings_collection.find_one({"_id": "config"}) or {}
-    feeds = config.get("rss_feeds", [])
-    channels = config.get("news_channels", [])
+        # Try to extract image (from summary or media content)
+        image_url = None
+        soup = BeautifulSoup(summary_html, "html.parser")
+        img_tag = soup.find("img")
+        if img_tag:
+            image_url = img_tag.get("src")
 
-    if not feeds or not channels:
-        return
+        # Format for Telegram (Markdown)
+        formatted_text = (
+            f"📰 **[{title}]({link})**\n"
+            f"👤 *Author:* `{author}`\n"
+            f"🗂️ *Category:* `{category_text}`\n"
+            f"🗓️ *Published:* `{published}`\n\n"
+            f"{summary_text}"
+        )
 
-    async with aiohttp.ClientSession() as session:
-        for feed_url in feeds:
-            parsed = await fetch_rss_feed(session, feed_url)
-            if not parsed or not parsed.entries:
-                continue
+        news_items.append({
+            "title": title,
+            "link": link,
+            "summary": summary_text,
+            "image": image_url,
+            "text": formatted_text
+        })
 
-            recent_news = filter_recent_entries(parsed.entries)
-            for entry in recent_news:
-                title = entry.get("title", "No Title")
-                link = entry.get("link", "")
-                summary = entry.get("summary", "")
-                if link in posted_links:
-                    continue  # Skip already posted
-
-                message = f"**{title}**\n\n{summary}\n\n[Read more]({link})"
-                for channel in channels:
-                    try:
-                        await app.send_message(f"@{channel}", message, disable_web_page_preview=False)
-                    except Exception as e:
-                        print(f"Failed to send to @{channel}: {e}")
-                posted_links.add(link)
+    return news_items
