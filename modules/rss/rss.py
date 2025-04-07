@@ -19,15 +19,18 @@ async def fetch_and_send_news(app: Client, db, global_settings_collection):
         for entry in entries:
             entry_id = entry.get("id") or entry.get("link")
             if not db.sent_news.find_one({"entry_id": entry_id}):
-                thumbnail_url = entry.media_thumbnail[0]['url'] if 'media_thumbnail' in entry else None
+                thumbnail_url = (
+                    entry.get("media_thumbnail", [{}])[0].get("url")
+                    if entry.get("media_thumbnail") else None
+                )
                 title = entry.get("title", "No Title")
                 summary = entry.get("summary", "No summary available.")
                 link = entry.get("link", "#")
 
                 msg = (
-                    f"<b>**<blockquote>💫 {title} 💫</blockquote>\n"
-                    f"<blockquote>Bʏ @News_Stardust 🗞️</blockquote>**</b>\n\n"
-                    f"<blockquote expandable>✨ {summary}</blockquote>\n"
+                    f"<b><blockquote>💫 {title} 💫</blockquote>"
+                    f"<blockquote>Bʏ @News_Stardust 🗞️</blockquote></b>\n\n"
+                    f"<blockquote>✨ {summary}</blockquote>\n"
                     f"<blockquote><a href='{link}'>Rᴇᴀᴅ ᴍᴏʀᴇ</a></blockquote>"
                 )
 
