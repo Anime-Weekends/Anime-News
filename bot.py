@@ -53,18 +53,20 @@ async def start(client, message):
         ],
     ])
 
+    # Safely get the username or fall back to "User"
+    username = message.from_user.username if message.from_user and message.from_user.username else "User"
+
     await app.send_photo(
         chat_id,
         START_PIC,
         caption=(
-            f"**<blockquote>ʙᴀᴋᴋᴀᴀᴀ {message.from_user.username}!!!</blockquote>**\n"
+            f"**<blockquote>ʙᴀᴋᴋᴀᴀᴀ {username} !!!</blockquote>**\n"
             f"**ɪ ᴀᴍ ᴀɴ ᴀɴɪᴍᴇ ɴᴇᴡs ʙᴏᴛ.**\n"
             f"**ɪ ᴛᴀᴋᴇ ᴀɴɪᴍᴇ ɴᴇᴡs ᴄᴏᴍɪɴɢ ғʀᴏᴍ ʀss ꜰᴇᴇᴅs ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴜᴘʟᴏᴀᴅ ɪᴛ ᴛᴏ ᴍʏ ᴍᴀsᴛᴇʀ's ᴀɴɪᴍᴇ ɴᴇᴡs ᴄʜᴀɴɴᴇʟ.**"
         ),
         reply_markup=buttons
     )
-
-
+    
 # ----------------------------
 # Admin Permission Checker
 # ----------------------------
