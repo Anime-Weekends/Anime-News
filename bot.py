@@ -5,7 +5,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import threading
 import pymongo
 import feedparser
-from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI
+from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI, ADMINS
 
 from webhook import start_webhook
 from modules.rss.rss import fetch_and_send_news
@@ -48,7 +48,7 @@ async def start(client, message):
             InlineKeyboardButton("ꜱᴜᴩᴩᴏʀᴛ ᴄʜᴀɴɴᴇʟ", url="https://t.me/Bots_Nation_Support"),
         ],
         [
-            InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴩᴇʀ", url="https://t.me/RexySama"),
+            InlineKeyboardButton("Dᴇᴠᴇʟᴏᴩᴇʀ", url="https://t.me/RexySama"),
         ],
     ])
 
@@ -56,7 +56,7 @@ async def start(client, message):
         chat_id,
         START_PIC,
         caption=(
-            f"**ʙᴀᴋᴋᴀᴀᴀ {message.from_user.username}!!!**\n"
+            f"**<blockquote>ʙᴀᴋᴋᴀᴀᴀ {message.from_user.username}!!!</blockquote>**\n"
             f"**ɪ ᴀᴍ ᴀɴ ᴀɴɪᴍᴇ ɴᴇᴡs ʙᴏᴛ.**\n"
             f"**ɪ ᴛᴀᴋᴇ ᴀɴɪᴍᴇ ɴᴇᴡs ᴄᴏᴍɪɴɢ ғʀᴏᴍ ʀss ꜰᴇᴇᴅs ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴜᴘʟᴏᴀᴅ ɪᴛ ᴛᴏ ᴍʏ ᴍᴀsᴛᴇʀ's ᴀɴɪᴍᴇ ɴᴇᴡs ᴄʜᴀɴɴᴇʟ.**"
         ),
