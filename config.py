@@ -14,5 +14,7 @@ START_PIC = "https://i.ibb.co/ynjcqYdZ/photo-2025-04-06-20-48-47-749030498576734
 
 MONGO_URI = "mongodb+srv://soulmovies37:FwHMGCpSMCnVVmhw@cluster0.uyokx.mongodb.net/?retryWrites=true&w=majority" #Databse uri get it from https://www.mongodb.com/
 
+OWNER_ID = int(os.environ.get("OWNER_ID", 6266529037))
+ADMINS = [OWNER_ID]
 
 #By RexySama
