@@ -63,6 +63,8 @@ def is_admin(user_id: int) -> bool:
         return True
     return admins_col.find_one({"user_id": user_id}) is not None
 
+# NEWS CHANNEL MANAGEMENT
+
 @app.on_message(filters.command("news"))
 async def connect_news(client, message):
     chat_id = message.chat.id
@@ -104,6 +106,51 @@ async def remove_news_channel(client, message):
     channels.remove(channel)
     global_settings_collection.update_one({"_id": "config"}, {"$set": {"news_channels": channels}})
     await app.send_message(message.chat.id, f"Removed @{channel} from the list.")
+
+# RSS MANAGEMENT
+
+@app.on_message(filters.command("addrss") & filters.private)
+async def add_rss(client, message):
+    if not is_admin(message.from_user.id):
+        return await message.reply("You're not authorized to add RSS feeds.")
+    if len(message.command) != 2:
+        return await message.reply("Usage: /addrss <rss_url>")
+    rss_url = message.command[1].strip()
+    config = global_settings_collection.find_one({"_id": "config"}) or {}
+    feeds = config.get("rss_feeds", [])
+    if rss_url in feeds:
+        return await message.reply("This RSS feed is already added.")
+    feeds.append(rss_url)
+    global_settings_collection.update_one({"_id": "config"}, {"$set": {"rss_feeds": feeds}}, upsert=True)
+    await message.reply("RSS feed added successfully.")
+
+@app.on_message(filters.command("removerss") & filters.private)
+async def remove_rss(client, message):
+    if not is_admin(message.from_user.id):
+        return await message.reply("You're not authorized to remove RSS feeds.")
+    if len(message.command) != 2:
+        return await message.reply("Usage: /removerss <rss_url>")
+    rss_url = message.command[1].strip()
+    config = global_settings_collection.find_one({"_id": "config"}) or {}
+    feeds = config.get("rss_feeds", [])
+    if rss_url not in feeds:
+        return await message.reply("This RSS feed is not in the list.")
+    feeds.remove(rss_url)
+    global_settings_collection.update_one({"_id": "config"}, {"$set": {"rss_feeds": feeds}})
+    await message.reply("RSS feed removed successfully.")
+
+@app.on_message(filters.command("listrss") & filters.private)
+async def list_rss(client, message):
+    if not is_admin(message.from_user.id):
+        return await message.reply("You're not authorized to view RSS feeds.")
+    config = global_settings_collection.find_one({"_id": "config"}) or {}
+    feeds = config.get("rss_feeds", [])
+    if not feeds:
+        return await message.reply("No RSS feeds added yet.")
+    text = "**Configured RSS Feeds:**\n\n" + "\n".join([f"- {url}" for url in feeds])
+    await message.reply(text)
+
+# ADMIN COMMANDS
 
 @app.on_message(filters.command("addadmin") & filters.private)
 async def add_admin(client, message):
@@ -147,11 +194,12 @@ async def list_admins(client, message):
     all_admins = static_admins + dynamic_admins
     await message.reply("**Current Admins:**\n" + "\n".join(all_admins))
 
+# MAIN LOOP
+
 async def main():
     await app.start()
     print("Bot is running...")
 
-    # Notify the first admin
     try:
         await app.send_message(ADMINS[0], "<blockquote>✅ Bot has started successfully and is now running.</blockquote>")
     except Exception as e:
