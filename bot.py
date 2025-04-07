@@ -9,7 +9,7 @@ from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI
 
 from webhook import start_webhook
 from modules.rss.rss import fetch_and_send_news
-
+from modules.rss.rss import news_feed_loop
 # MongoDB setup
 mongo_client = pymongo.MongoClient(MONGO_URI)
 db = mongo_client["AnimeNewsBot"]
