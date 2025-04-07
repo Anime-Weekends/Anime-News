@@ -1,113 +1,125 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from config import API_ID, API_HASH, BOT_TOKEN, OWNER_ID, ADMINS, URL_A
-from rss import fetch_and_format_rss
+from config import (
+    BOT_TOKEN, API_ID, API_HASH,
+    ADMINS, URL_A, OWNER_ID,
+    START_PIC, MONGO_URI
+)
 from pymongo import MongoClient
-from config import MONGO_URI
+import feedparser
 
+# Initialize bot client
 client = Client("AnimeNewsBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
+# Setup MongoDB
 mongo = MongoClient(MONGO_URI)
 db = mongo.anime_news
-admin_col = db.admins
-rss_col = db.rss_links
+db_admins = db.admins
+db_rss = db.rss
+db_channels = db.rss_channels
 
-# Ensure OWNER is in admin list
-if admin_col.count_documents({}) == 0:
-    admin_col.insert_one({"admin_id": OWNER_ID})
-
-# Check if user is admin
+# Check admin
 def is_admin(user_id):
-    return admin_col.find_one({"admin_id": user_id}) is not None
+    return user_id == OWNER_ID or db_admins.find_one({"_id": user_id})
 
+# /start command
 @client.on_message(filters.command("start"))
 async def start_handler(_, message: Message):
     await message.reply_photo(
-        photo="https://i.ibb.co/ynjcqYdZ/photo-2025-04-06-20-48-47-7490304985767346192.jpg",
-        caption="Welcome to AnimeNewsBot!\nUse /news to get latest anime news.\nAdmins can manage feeds with /addrss, /removerss, etc."
+        START_PIC,
+        caption="Welcome to Anime News Bot!\n\nUse /help to see all commands."
     )
 
-# ADMIN COMMANDS
+# /help command
+@client.on_message(filters.command("help"))
+async def help_handler(_, message: Message):
+    await message.reply_text("""
+**Admin Commands:**
+/addadmin [user_id] - Add an admin
+/removeadmin [user_id] - Remove an admin
+/adminlist - List all admins
+
+**RSS Commands:**
+/addrss [rss_url] - Add RSS feed URL
+/removerss [rss_url] - Remove RSS feed URL
+/listrss - List all RSS feeds
+
+**News Command:**
+/news - Add this channel for anime news updates
+""")
+
+# /addadmin command
 @client.on_message(filters.command("addadmin"))
 async def add_admin(_, message: Message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("You are not authorized.")
+    if message.from_user.id != OWNER_ID:
+        return
+    if len(message.command) < 2:
+        return await message.reply("Please provide a user ID.")
+    user_id = int(message.command[1])
+    db_admins.update_one({"_id": user_id}, {"$set": {"admin": True}}, upsert=True)
+    await message.reply(f"User {user_id} added as admin.")
 
-    if len(message.command) != 2 or not message.command[1].isdigit():
-        return await message.reply("Usage: /addadmin <user_id>")
-
-    new_admin = int(message.command[1])
-    if is_admin(new_admin):
-        return await message.reply("User is already an admin.")
-
-    admin_col.insert_one({"admin_id": new_admin})
-    await message.reply("Admin added.")
-
+# /removeadmin command
 @client.on_message(filters.command("removeadmin"))
 async def remove_admin(_, message: Message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("You are not authorized.")
+    if message.from_user.id != OWNER_ID:
+        return
+    if len(message.command) < 2:
+        return await message.reply("Please provide a user ID.")
+    user_id = int(message.command[1])
+    db_admins.delete_one({"_id": user_id})
+    await message.reply(f"User {user_id} removed from admin list.")
 
-    if len(message.command) != 2 or not message.command[1].isdigit():
-        return await message.reply("Usage: /removeadmin <user_id>")
-
-    admin_id = int(message.command[1])
-    if admin_id == OWNER_ID:
-        return await message.reply("Cannot remove the owner.")
-    admin_col.delete_one({"admin_id": admin_id})
-    await message.reply("Admin removed.")
-
+# /adminlist command
 @client.on_message(filters.command("adminlist"))
 async def admin_list(_, message: Message):
     if not is_admin(message.from_user.id):
-        return await message.reply("You are not authorized.")
-
-    admins = [str(admin["admin_id"]) for admin in admin_col.find()]
+        return
+    admins = [str(doc['_id']) for doc in db_admins.find()]
+    admins.append(str(OWNER_ID))
     await message.reply("Admins:\n" + "\n".join(admins))
 
-# RSS COMMANDS
+# /addrss command
 @client.on_message(filters.command("addrss"))
 async def add_rss(_, message: Message):
     if not is_admin(message.from_user.id):
-        return await message.reply("You are not authorized.")
-    if len(message.command) != 2:
-        return await message.reply("Usage: /addrss <url>")
-
+        return
+    if len(message.command) < 2:
+        return await message.reply("Please provide an RSS URL.")
     url = message.command[1]
-    if rss_col.find_one({"url": url}):
-        return await message.reply("This RSS feed already exists.")
-    rss_col.insert_one({"url": url})
+    db_rss.update_one({"_id": url}, {"$set": {"url": url}}, upsert=True)
     await message.reply("RSS feed added.")
 
+# /removerss command
 @client.on_message(filters.command("removerss"))
 async def remove_rss(_, message: Message):
     if not is_admin(message.from_user.id):
-        return await message.reply("You are not authorized.")
-    if len(message.command) != 2:
-        return await message.reply("Usage: /removerss <url>")
-
+        return
+    if len(message.command) < 2:
+        return await message.reply("Please provide an RSS URL to remove.")
     url = message.command[1]
-    rss_col.delete_one({"url": url})
+    db_rss.delete_one({"_id": url})
     await message.reply("RSS feed removed.")
 
+# /listrss command
 @client.on_message(filters.command("listrss"))
 async def list_rss(_, message: Message):
-    feeds = rss_col.find()
-    urls = [feed["url"] for feed in feeds]
-    if not urls:
-        return await message.reply("No RSS feeds added.")
-    await message.reply("RSS Feeds:\n" + "\n".join(urls))
-
-@client.on_message(filters.command("news"))
-async def post_news(_, message: Message):
-    feeds = rss_col.find()
-    if feeds.count() == 0:
-        # fallback to default MAL feed
-        urls = [URL_A]
+    if not is_admin(message.from_user.id):
+        return
+    feeds = [doc['_id'] for doc in db_rss.find()]
+    if feeds:
+        await message.reply("RSS Feeds:\n" + "\n".join(feeds))
     else:
-        urls = [f["url"] for f in feeds]
+        await message.reply("No RSS feeds found.")
 
-    for url in urls:
-        entries = await fetch_and_format_rss(url)
-        for entry in entries:
-            await message.reply(entry)
+# /news command
+@client.on_message(filters.command("news"))
+async def add_news_channel(_, message: Message):
+    if not is_admin(message.from_user.id):
+        return
+    chat_id = message.chat.id
+    db_channels.update_one({"_id": chat_id}, {"$set": {"chat_id": chat_id}}, upsert=True)
+    await message.reply("This chat has been added for anime news updates.")
+
+# Run the bot
+client.run()
