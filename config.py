@@ -1,16 +1,13 @@
+# config.py
+
 API_ID = 28744454
 API_HASH = "debd37cef0ad1a1ce45d0be8e8c3c5e7"
 BOT_TOKEN = "7773900178:AAEQEQAXahfYAVsol1EUcwYPKa0Or2cPCdg"
-
-# Webhook URL should be your Koyeb endpoint (no trailing slash)
 WEBHOOK_URL = "https://cheerful-kimberlee-filetolink1286-a70f100b.koyeb.app"
+MONGO_URI = "mongodb+srv://soulmovies37:FwHMGCpSMCnVVmhw@cluster0.uyokx.mongodb.net/?retryWrites=true&w=majority"
 
-# MAL RSS Feed
 URL_A = "https://myanimelist.net/rss.php?type=news"
 START_PIC = "https://i.ibb.co/ynjcqYdZ/photo-2025-04-06-20-48-47-7490304985767346192.jpg"
 
-# MongoDB URI
-MONGO_URI = "mongodb+srv://soulmovies37:FwHMGCpSMCnVVmhw@cluster0.uyokx.mongodb.net/?retryWrites=true&w=majority"
-
 OWNER_ID = 6266529037
-ADMINS = [OWNER_ID]
+ADMINS = [6266529037]
