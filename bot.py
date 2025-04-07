@@ -22,9 +22,6 @@ app = Client("AnimeNewsBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOK
 webhook_thread = threading.Thread(target=start_webhook, daemon=True)
 webhook_thread.start()
 
-async def escape_markdown_v2(text: str) -> str:
-    return text
-
 async def send_message_to_user(chat_id: int, message: str, image_url: str = None):
     try:
         if image_url:
@@ -63,7 +60,7 @@ def is_admin(user_id: int) -> bool:
         return True
     return admins_col.find_one({"user_id": user_id}) is not None
 
-# NEWS CHANNEL MANAGEMENT
+# === News Channel Management ===
 
 @app.on_message(filters.command("news"))
 async def connect_news(client, message):
@@ -107,7 +104,7 @@ async def remove_news_channel(client, message):
     global_settings_collection.update_one({"_id": "config"}, {"$set": {"news_channels": channels}})
     await app.send_message(message.chat.id, f"Removed @{channel} from the list.")
 
-# RSS MANAGEMENT
+# === RSS Feed Management ===
 
 @app.on_message(filters.command("addrss") & filters.private)
 async def add_rss(client, message):
@@ -150,7 +147,7 @@ async def list_rss(client, message):
     text = "**Configured RSS Feeds:**\n\n" + "\n".join([f"- {url}" for url in feeds])
     await message.reply(text)
 
-# ADMIN COMMANDS
+# === Admin Commands ===
 
 @app.on_message(filters.command("addadmin") & filters.private)
 async def add_admin(client, message):
@@ -194,10 +191,11 @@ async def list_admins(client, message):
     all_admins = static_admins + dynamic_admins
     await message.reply("**Current Admins:**\n" + "\n".join(all_admins))
 
-# MAIN LOOP
+# === Main Loop ===
 
 async def main():
     await app.start()
+    await app.set_webhook(f"{URL_A}/{BOT_TOKEN}")  # <-- Add webhook registration
     print("Bot is running...")
 
     try:
@@ -207,8 +205,6 @@ async def main():
 
     async def periodic_news_loop():
         while True:
-            config = global_settings_collection.find_one({"_id": "config"}) or {}
-            channels = config.get("news_channels", [])
             await fetch_and_send_news(app, db, global_settings_collection)
             await asyncio.sleep(600)
 
