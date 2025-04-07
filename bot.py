@@ -1,144 +1,113 @@
-import asyncio
-import threading
-from pyrogram import Client, filters, idle
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-import pymongo
+from pyrogram import Client, filters
+from pyrogram.types import Message
+from config import API_ID, API_HASH, BOT_TOKEN, OWNER_ID, ADMINS, URL_A
+from rss import fetch_and_format_rss
+from pymongo import MongoClient
+from config import MONGO_URI
 
-from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI, ADMINS
-from webhook import start_webhook
-from modules.rss.rss import fetch_and_send_news
+client = Client("AnimeNewsBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# MongoDB setup
-mongo_client = pymongo.MongoClient(MONGO_URI)
-db = mongo_client["AnimeNewsBot"]
-global_settings_collection = db["global_settings"]
-admins_col = db["admins"]
+mongo = MongoClient(MONGO_URI)
+db = mongo.anime_news
+admin_col = db.admins
+rss_col = db.rss_links
 
-# Pyrogram bot setup
-app = Client("AnimeNewsBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Ensure OWNER is in admin list
+if admin_col.count_documents({}) == 0:
+    admin_col.insert_one({"admin_id": OWNER_ID})
 
-# Start Flask webhook
-threading.Thread(target=start_webhook, daemon=True).start()
+# Check if user is admin
+def is_admin(user_id):
+    return admin_col.find_one({"admin_id": user_id}) is not None
 
-def is_admin(user_id: int) -> bool:
-    return user_id in ADMINS or admins_col.find_one({"user_id": user_id}) is not None
-
-# Start command
-@app.on_message(filters.command("start"))
-async def start(client, message):
-    username = message.from_user.username or "User"
+@client.on_message(filters.command("start"))
+async def start_handler(_, message: Message):
     await message.reply_photo(
-        photo=START_PIC,
-        caption=(
-            f"**<blockquote>ʙᴀᴋᴋᴀᴀᴀ {username} !!!</blockquote>**\n"
-            f"**ɪ ᴀᴍ ᴀɴ ᴀɴɪᴍᴇ ɴᴇᴡs ʙᴏᴛ.**\n"
-            f"**ɪ ғᴇᴛᴄʜ ʀss ɴᴇᴡs ᴀɴᴅ ᴘᴏsᴛ ɪᴛ ɪɴ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ.**"
-        ),
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Main Hub", url="https://t.me/RexySama"),
-             InlineKeyboardButton("Support", url="https://t.me/RexySama")],
-            [InlineKeyboardButton("Developer", url="https://t.me/RexySama")]
-        ])
+        photo="https://i.ibb.co/ynjcqYdZ/photo-2025-04-06-20-48-47-7490304985767346192.jpg",
+        caption="Welcome to AnimeNewsBot!\nUse /news to get latest anime news.\nAdmins can manage feeds with /addrss, /removerss, etc."
     )
 
-# Admin commands
-@app.on_message(filters.command("addadmin") & filters.private)
-async def add_admin(client, message):
+# ADMIN COMMANDS
+@client.on_message(filters.command("addadmin"))
+async def add_admin(_, message: Message):
     if not is_admin(message.from_user.id):
-        return await message.reply("Unauthorized.")
-    if len(message.command) != 2:
+        return await message.reply("You are not authorized.")
+
+    if len(message.command) != 2 or not message.command[1].isdigit():
         return await message.reply("Usage: /addadmin <user_id>")
-    uid = int(message.command[1])
-    if is_admin(uid):
-        return await message.reply("Already admin.")
-    admins_col.insert_one({"user_id": uid})
-    await message.reply(f"Added {uid} as admin.")
 
-@app.on_message(filters.command("removeadmin") & filters.private)
-async def remove_admin(client, message):
+    new_admin = int(message.command[1])
+    if is_admin(new_admin):
+        return await message.reply("User is already an admin.")
+
+    admin_col.insert_one({"admin_id": new_admin})
+    await message.reply("Admin added.")
+
+@client.on_message(filters.command("removeadmin"))
+async def remove_admin(_, message: Message):
     if not is_admin(message.from_user.id):
-        return await message.reply("Unauthorized.")
-    if len(message.command) != 2:
+        return await message.reply("You are not authorized.")
+
+    if len(message.command) != 2 or not message.command[1].isdigit():
         return await message.reply("Usage: /removeadmin <user_id>")
-    uid = int(message.command[1])
-    if uid in ADMINS:
-        return await message.reply("Can't remove static admin.")
-    result = admins_col.delete_one({"user_id": uid})
-    await message.reply("Removed." if result.deleted_count else "Not found.")
 
-@app.on_message(filters.command("adminlist") & filters.private)
-async def list_admins(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("Unauthorized.")
-    static_admins = [str(a) for a in ADMINS]
-    dynamic_admins = [str(a["user_id"]) for a in admins_col.find()]
-    await message.reply("**Admins:**\n" + "\n".join(static_admins + dynamic_admins))
+    admin_id = int(message.command[1])
+    if admin_id == OWNER_ID:
+        return await message.reply("Cannot remove the owner.")
+    admin_col.delete_one({"admin_id": admin_id})
+    await message.reply("Admin removed.")
 
-# RSS Management
-@app.on_message(filters.command("addrss") & filters.private)
-async def addrss(client, message):
+@client.on_message(filters.command("adminlist"))
+async def admin_list(_, message: Message):
     if not is_admin(message.from_user.id):
-        return await message.reply("Unauthorized.")
+        return await message.reply("You are not authorized.")
+
+    admins = [str(admin["admin_id"]) for admin in admin_col.find()]
+    await message.reply("Admins:\n" + "\n".join(admins))
+
+# RSS COMMANDS
+@client.on_message(filters.command("addrss"))
+async def add_rss(_, message: Message):
+    if not is_admin(message.from_user.id):
+        return await message.reply("You are not authorized.")
     if len(message.command) != 2:
         return await message.reply("Usage: /addrss <url>")
-    url = message.command[1]
-    cfg = global_settings_collection.find_one({"_id": "config"}) or {}
-    feeds = cfg.get("rss_feeds", [])
-    if url in feeds:
-        return await message.reply("Already added.")
-    feeds.append(url)
-    global_settings_collection.update_one({"_id": "config"}, {"$set": {"rss_feeds": feeds}}, upsert=True)
-    await message.reply("Feed added.")
 
-@app.on_message(filters.command("removerss") & filters.private)
-async def removerss(client, message):
+    url = message.command[1]
+    if rss_col.find_one({"url": url}):
+        return await message.reply("This RSS feed already exists.")
+    rss_col.insert_one({"url": url})
+    await message.reply("RSS feed added.")
+
+@client.on_message(filters.command("removerss"))
+async def remove_rss(_, message: Message):
     if not is_admin(message.from_user.id):
-        return await message.reply("Unauthorized.")
+        return await message.reply("You are not authorized.")
     if len(message.command) != 2:
         return await message.reply("Usage: /removerss <url>")
+
     url = message.command[1]
-    cfg = global_settings_collection.find_one({"_id": "config"}) or {}
-    feeds = cfg.get("rss_feeds", [])
-    if url not in feeds:
-        return await message.reply("Not found.")
-    feeds.remove(url)
-    global_settings_collection.update_one({"_id": "config"}, {"$set": {"rss_feeds": feeds}})
-    await message.reply("Feed removed.")
+    rss_col.delete_one({"url": url})
+    await message.reply("RSS feed removed.")
 
-@app.on_message(filters.command("listrss") & filters.private)
-async def listrss(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("Unauthorized.")
-    cfg = global_settings_collection.find_one({"_id": "config"}) or {}
-    feeds = cfg.get("rss_feeds", [])
-    if not feeds:
-        return await message.reply("No feeds.")
-    await message.reply("**Feeds:**\n" + "\n".join(feeds))
+@client.on_message(filters.command("listrss"))
+async def list_rss(_, message: Message):
+    feeds = rss_col.find()
+    urls = [feed["url"] for feed in feeds]
+    if not urls:
+        return await message.reply("No RSS feeds added.")
+    await message.reply("RSS Feeds:\n" + "\n".join(urls))
 
-# News command
-@app.on_message(filters.command("news") & filters.private)
-async def post_news(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("Unauthorized.")
-    await message.reply("Fetching latest news...")
-    await fetch_and_send_news(app, db, global_settings_collection)
+@client.on_message(filters.command("news"))
+async def post_news(_, message: Message):
+    feeds = rss_col.find()
+    if feeds.count() == 0:
+        # fallback to default MAL feed
+        urls = [URL_A]
+    else:
+        urls = [f["url"] for f in feeds]
 
-# Bot loop
-async def main():
-    await app.start()
-    print("Bot is running...")
-    try:
-        await app.send_message(ADMINS[0], "✅ Bot started.")
-    except Exception as e:
-        print(f"Startup message failed: {e}")
-
-    async def loop_news():
-        while True:
-            await fetch_and_send_news(app, db, global_settings_collection)
-            await asyncio.sleep(600)
-
-    asyncio.create_task(loop_news())
-    await idle()
-
-if __name__ == '__main__':
-    asyncio.run(main())
+    for url in urls:
+        entries = await fetch_and_format_rss(url)
+        for entry in entries:
+            await message.reply(entry)
