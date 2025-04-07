@@ -10,12 +10,13 @@ from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI, ADM
 from webhook import start_webhook
 from modules.rss.rss import fetch_and_send_news
 from modules.rss.rss import news_feed_loop
+
 # MongoDB setup
 mongo_client = pymongo.MongoClient(MONGO_URI)
 db = mongo_client["AnimeNewsBot"]
 user_settings_collection = db["user_settings"]
 global_settings_collection = db["global_settings"]
-admins_col = db["admins"]   # Collection for dynamic admins
+admins_col = db["admins"]  # Collection for dynamic admins
 
 # Pyrogram app
 app = Client("AnimeNewsBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -63,6 +64,22 @@ async def start(client, message):
         reply_markup=buttons
     )
 
+
+# ----------------------------
+# Admin Permission Checker
+# ----------------------------
+
+def is_admin(user_id: int) -> bool:
+    # Check static admin from config.py
+    if user_id in ADMINS:
+        return True
+    # Check dynamic admins in MongoDB
+    return admins_col.find_one({"user_id": user_id}) is not None
+
+
+# ----------------------------
+# News Channel Commands
+# ----------------------------
 
 @app.on_message(filters.command("news"))
 async def connect_news(client, message):
@@ -122,13 +139,6 @@ async def remove_news_channel(client, message):
 # Admin Management Commands
 # ----------------------------
 
-def is_admin(user_id: int) -> bool:
-    """
-    Check if the user is an admin either in static ADMINS list or dynamic admins in MongoDB.
-    """
-    return admins_col.find_one({"user_id": user_id}) is not None
-
-
 @app.on_message(filters.command("addadmin") & filters.private)
 async def add_admin(client, message):
     if not is_admin(message.from_user.id):
@@ -173,6 +183,10 @@ async def list_admins(client, message):
     all_admins = static_admins + dynamic_admins
     await message.reply("**Current Admins:**\n" + "\n".join(all_admins))
 
+
+# ----------------------------
+# Main Start Loop
+# ----------------------------
 
 async def main():
     await app.start()
