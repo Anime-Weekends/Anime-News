@@ -1,51 +1,49 @@
 # rss.py
 
 import feedparser
-import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 def fetch_news(feed_url):
-    parsed_feed = feedparser.parse(feed_url)
+    feed = feedparser.parse(feed_url)
     news_items = []
 
-    for entry in parsed_feed.entries[:5]:  # Fetch latest 5
-        title = entry.get("title", "No title")
-        link = entry.get("link", "")
-        published = entry.get("published", "Unknown date")
-        author = entry.get("author", "Unknown author")
-        categories = [cat.term for cat in entry.get("tags", [])]
-        category_text = ", ".join(categories) if categories else "None"
+    for entry in feed.entries[:3]:  # Limit to 3 latest
+        title = entry.title
+        link = entry.link
+        published = format_date(entry.get("published", "Unknown"))
+        summary = clean_summary(entry.summary)
+        image = extract_image(entry.summary)
 
-        # Clean HTML summary
-        summary_html = entry.get("summary", "")
-        summary_text = BeautifulSoup(summary_html, "html.parser").text.strip()
-
-        # Truncate long summary
-        if len(summary_text) > 500:
-            summary_text = summary_text[:500] + "... [Read more](" + link + ")"
-
-        # Try to extract image (from summary or media content)
-        image_url = None
-        soup = BeautifulSoup(summary_html, "html.parser")
-        img_tag = soup.find("img")
-        if img_tag:
-            image_url = img_tag.get("src")
-
-        # Format for Telegram (Markdown)
-        formatted_text = (
-            f"📰 **[{title}]({link})**\n"
-            f"👤 *Author:* `{author}`\n"
-            f"🗂️ *Category:* `{category_text}`\n"
-            f"🗓️ *Published:* `{published}`\n\n"
-            f"{summary_text}"
+        caption = (
+            f"**📰 {title}**\n\n"
+            f"**🗓️ Published:** `{published}`\n"
+            f"**🌐 Source:** [Visit Link]({link})\n\n"
+            f"__{summary}__"
         )
 
         news_items.append({
             "title": title,
             "link": link,
-            "summary": summary_text,
-            "image": image_url,
-            "text": formatted_text
+            "text": caption,
+            "image": image
         })
 
     return news_items
+
+def extract_image(html_summary):
+    soup = BeautifulSoup(html_summary, "html.parser")
+    img = soup.find("img")
+    return img["src"] if img and "src" in img.attrs else None
+
+def clean_summary(summary_html):
+    soup = BeautifulSoup(summary_html, "html.parser")
+    text = soup.get_text(separator=" ", strip=True)
+    return text[:500] + "..." if len(text) > 500 else text
+
+def format_date(date_str):
+    try:
+        dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
+        return dt.strftime("%d %b %Y, %H:%M")
+    except:
+        return date_str
