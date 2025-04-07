@@ -1,12 +1,10 @@
 import aiohttp
 import asyncio
-from pyrogram import Client, filters, idle  # <-- FIXED: Correct idle import
+from pyrogram import Client, filters, idle
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import threading
 import pymongo
-import feedparser
 from config import API_ID, API_HASH, BOT_TOKEN, URL_A, START_PIC, MONGO_URI, ADMINS
-
 from webhook import start_webhook
 from modules.rss.rss import fetch_and_send_news
 
@@ -155,7 +153,7 @@ async def main():
 
     # Notify the first admin
     try:
-        await app.send_message(ADMINS[0], "✅ Bot has started successfully and is now running.")
+        await app.send_message(ADMINS[0], "<blockquote>✅ Bot has started successfully and is now running.</blockquote>")
     except Exception as e:
         print(f"Failed to send startup message: {e}")
 
@@ -163,8 +161,7 @@ async def main():
         while True:
             config = global_settings_collection.find_one({"_id": "config"}) or {}
             channels = config.get("news_channels", [])
-            urls = config.get("rss_feeds", [])  # <-- FIXED: Get the RSS URLs
-            await fetch_and_send_news(app, db, channels, urls)  # <-- FIXED: Added urls
+            await fetch_and_send_news(app, db, channels, global_settings_collection)
             await asyncio.sleep(600)
 
     asyncio.create_task(periodic_news_loop())
