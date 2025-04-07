@@ -1,4 +1,5 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
+import asyncio
 
 app = Flask(__name__)
 
@@ -10,7 +11,11 @@ def root_route_handler():
 def health_check():
     return jsonify({"status": "OK"})
 
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+def telegram_webhook():
+    update = request.get_data()
+    asyncio.create_task(pyro_app.process_webhook_update(update))  # "pyro_app" must be your Pyrogram Client instance
+    return "OK"
+
 def start_webhook():
     app.run(host="0.0.0.0", port=8000, threaded=True)
-
-#By RexySama
