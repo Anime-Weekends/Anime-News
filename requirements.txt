@@ -1,4 +1,4 @@
-git+https://github.com/ItsDeltin/pyrofork.git
+git+https://Anime-Weekends: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@github.com/ItsDeltin/pyrofork.git
 Flask==2.3.3
 feedparser==6.0.11
 pymongo[srv]==4.6.3
