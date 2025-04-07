@@ -171,15 +171,15 @@ def shorten(description, info="anilist.co"):
 
 async def handle_media(mesg, media_type):
     search = mesg.text.split(None, 1)
-    reply = await mesg.reply("⏳ <i>Please wait ...</i>", quote=True)
+    reply = await mesg.reply("<blockquote>⏳ <i>Please wait ...</blockquote></i>", quote=True)
     if len(search) == 1:
-        return await reply.edit(f"⚠️ <b>Give {media_type.capitalize()} name please.</b>")
+        return await reply.edit(f"<blockquote>⚠️ <b>Give {media_type.capitalize()} name please.</blockquote></b>")
     search = search[1]
     variables = {"search": search, "type": media_type.upper()}
     data = json.loads(await get_media(variables))["data"]
     res = data.get("Media", None)
     if not res:
-        return await reply.edit("💢 No Resource found! [404]")
+        return await reply.edit("<blockquote>💢 No Resource found! [404]</blockquote>")
 
     msg = f"<b>{res['title']['romaji']}</b> (<code>{res['title']['native']}</code>)\n<b>Type</b>: {res['format']}\n<b>Status</b>: {res['status']}\n"
     
@@ -223,9 +223,9 @@ async def handle_media(mesg, media_type):
     msg += shorten(description, info)
 
     image = info.replace("anilist.co/anime/", "img.anili.st/media/") if "anime" in info else res["coverImage"]["large"]
-    btn = [[InlineKeyboardButton("More info", url=info)]]
+    btn = [[InlineKeyboardButton("Mᴏʀᴇ ɪɴғᴏ", url=info)]]
     if trailer_url:
-        btn[0].append(InlineKeyboardButton("Trailer 🎬", url=trailer_url))
+        btn[0].append(InlineKeyboardButton("Tʀᴀɪʟᴇʀ 🎬", url=trailer_url))
 
     try:
         await mesg.reply_photo(image, caption=msg, reply_markup=InlineKeyboardMarkup(btn))
