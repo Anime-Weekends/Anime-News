@@ -209,7 +209,7 @@ async def main():
         while True:
             config = global_settings_collection.find_one({"_id": "config"}) or {}
             channels = config.get("news_channels", [])
-            await fetch_and_send_news(app, db, channels, global_settings_collection)
+            await fetch_and_send_news(app, db, global_settings_collection)
             await asyncio.sleep(600)
 
     asyncio.create_task(periodic_news_loop())
