@@ -1,50 +1,58 @@
-import asyncio
+# rss.py
+
+import aiohttp
 import feedparser
-from pyrogram import Client
+from datetime import datetime, timedelta
 
-async def fetch_and_send_news(app: Client, db, global_settings_collection):
+posted_links = set()  # Memory cache to avoid reposting same news
+
+async def fetch_rss_feed(session, url):
+    try:
+        async with session.get(url) as response:
+            return feedparser.parse(await response.text())
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
+        return None
+
+def filter_recent_entries(entries, hours=6):
+    now = datetime.utcnow()
+    cutoff = now - timedelta(hours=hours)
+    recent = []
+
+    for entry in entries:
+        published = entry.get("published_parsed")
+        if published:
+            published_dt = datetime(*published[:6])
+            if published_dt > cutoff:
+                recent.append(entry)
+    return recent
+
+async def fetch_and_send_news(app, db, global_settings_collection):
     config = global_settings_collection.find_one({"_id": "config"}) or {}
-    news_channels = config.get("news_channels", [])
-    rss_feeds = config.get("rss_feeds", [])
+    feeds = config.get("rss_feeds", [])
+    channels = config.get("news_channels", [])
 
-    if not news_channels or not rss_feeds:
+    if not feeds or not channels:
         return
 
-    sticker_file_id = "CAACAgUAAxkBAAEOP1Fn8vE65jQoZU-WKUd9NIZQy_W8CgAC2xQAAkczUFfhRns35IURtjYE"  # Change if needed
+    async with aiohttp.ClientSession() as session:
+        for feed_url in feeds:
+            parsed = await fetch_rss_feed(session, feed_url)
+            if not parsed or not parsed.entries:
+                continue
 
-    for url in rss_feeds:
-        feed = await asyncio.to_thread(feedparser.parse, url)
-        entries = list(feed.entries)[::-1]  # newest last
-
-        for entry in entries:
-            entry_id = entry.get("id") or entry.get("link")
-            if not db.sent_news.find_one({"entry_id": entry_id}):
-                thumbnail_url = (
-                    entry.get("media_thumbnail", [{}])[0].get("url")
-                    if entry.get("media_thumbnail") else None
-                )
+            recent_news = filter_recent_entries(parsed.entries)
+            for entry in recent_news:
                 title = entry.get("title", "No Title")
-                summary = entry.get("summary", "No summary available.")
-                link = entry.get("link", "#")
+                link = entry.get("link", "")
+                summary = entry.get("summary", "")
+                if link in posted_links:
+                    continue  # Skip already posted
 
-                msg = (
-                    f"<b><blockquote>💫 {title} 💫</blockquote>"
-                    f"<blockquote>Bʏ @News_Stardust 🗞️</blockquote></b>\n\n"
-                    f"<blockquote>✨ {summary}</blockquote>\n"
-                    f"<blockquote><a href='{link}'>Rᴇᴀᴅ ᴍᴏʀᴇ</a></blockquote>"
-                )
-
-                for channel in news_channels:
+                message = f"**{title}**\n\n{summary}\n\n[Read more]({link})"
+                for channel in channels:
                     try:
-                        await asyncio.sleep(15)
-                        if thumbnail_url:
-                            await app.send_photo(chat_id=f"@{channel}", photo=thumbnail_url, caption=msg)
-                        else:
-                            await app.send_message(chat_id=f"@{channel}", text=msg)
-
-                        await app.send_sticker(chat_id=f"@{channel}", sticker=sticker_file_id)
-
-                        db.sent_news.insert_one({"entry_id": entry_id, "title": title, "link": link})
-                        print(f"Sent news: {title} to @{channel}")
+                        await app.send_message(f"@{channel}", message, disable_web_page_preview=False)
                     except Exception as e:
-                        print(f"Error sending to @{channel}: {e}")
+                        print(f"Failed to send to @{channel}: {e}")
+                posted_links.add(link)
