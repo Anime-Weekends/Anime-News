@@ -48,7 +48,7 @@ async def start(client, message):
             InlineKeyboardButton("ꜱᴜᴩᴩᴏʀᴛ ᴄʜᴀɴɴᴇʟ", url="https://t.me/Bots_Nation_Support"),
         ],
         [
-            InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴩᴇʀ", url="https://t.me/darkxside78"),
+            InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴩᴇʀ", url="https://t.me/RexySama"),
         ],
     ])
 
@@ -67,7 +67,7 @@ async def start(client, message):
 @app.on_message(filters.command("news"))
 async def connect_news(client, message):
     chat_id = message.chat.id
-    if message.from_user.id not in ADMINS:
+    if not is_admin(message.from_user.id):
         return await app.send_message(chat_id, "You do not have permission to use this command.")
     if len(message.text.split()) < 2:
         return await app.send_message(chat_id, "Please provide a channel username (without @).")
@@ -86,7 +86,7 @@ async def connect_news(client, message):
 
 @app.on_message(filters.command("listnews"))
 async def list_news_channels(client, message):
-    if message.from_user.id not in ADMINS:
+    if not is_admin(message.from_user.id):
         return await app.send_message(message.chat.id, "You don't have permission.")
 
     config = global_settings_collection.find_one({"_id": "config"}) or {}
@@ -101,7 +101,7 @@ async def list_news_channels(client, message):
 
 @app.on_message(filters.command("removenews"))
 async def remove_news_channel(client, message):
-    if message.from_user.id not in ADMINS:
+    if not is_admin(message.from_user.id):
         return await app.send_message(message.chat.id, "You don't have permission.")
     if len(message.text.split()) < 2:
         return await app.send_message(message.chat.id, "Please provide a channel to remove.")
@@ -126,7 +126,7 @@ def is_admin(user_id: int) -> bool:
     """
     Check if the user is an admin either in static ADMINS list or dynamic admins in MongoDB.
     """
-    return user_id in ADMINS or admins_col.find_one({"user_id": user_id}) is not None
+    return admins_col.find_one({"user_id": user_id}) is not None
 
 
 @app.on_message(filters.command("addadmin") & filters.private)
