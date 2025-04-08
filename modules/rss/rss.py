@@ -1,52 +1,46 @@
-# rss.py
-
+import asyncio
 import feedparser
-import html
-import requests
-from bs4 import BeautifulSoup
+from pyrogram import Client
 
-def fetch_news(feed_url, limit=3):
-    parsed = feedparser.parse(feed_url)
-    entries = parsed.entries[:limit]
-    news_list = []
+async def fetch_and_send_news(app: Client, db, global_settings_collection, urls):
+    config = global_settings_collection.find_one({"_id": "config"})
+    if not config or "news_channel" not in config:
+        return
 
-    for entry in entries:
-        title = html.unescape(entry.get("title", "No Title"))
-        link = entry.get("link", "")
-        summary = html.unescape(entry.get("summary", ""))
-        published = entry.get("published", "No date")
+    news_channel = "@" + config["news_channel"]
 
-        image_url = extract_image_from_summary(summary) or extract_image_from_page(link)
+    for url in urls:
+        feed = await asyncio.to_thread(feedparser.parse, url)
+        entries = list(feed.entries)[::-1]
 
-        clean_summary = clean_html(summary)
-        text = f"**{title}**\n\n{clean_summary}\n\n**Published:** `{published}`"
+        for entry in entries:
+            entry_id = entry.get('id', entry.get('link'))
+            if db.sent_news.find_one({"entry_id": entry_id}):
+                continue
 
-        news_list.append({
-            "title": title,
-            "link": link,
-            "summary": clean_summary,
-            "published": published,
-            "text": text,
-            "image": image_url
-        })
+            title = entry.title.replace("-", "\\-").replace(".", "\\.")
+            summary = entry.summary if "summary" in entry else "No summary available"
+            summary = summary.replace("-", "\\-").replace(".", "\\.")
+            link = entry.link
+            thumbnail = entry.media_thumbnail[0]['url'] if 'media_thumbnail' in entry else None
 
-    return news_list
+            msg = (
+                f"> *{title}*\n\n"
+                f"> {summary}\n\n"
+                f"[Read more]({link})"
+            )
 
-def clean_html(raw_html):
-    soup = BeautifulSoup(raw_html, "html.parser")
-    text = soup.get_text()
-    return text.strip()[:1000] + "..." if len(text) > 1000 else text
+            try:
+                await asyncio.sleep(15)
+                if thumbnail:
+                    await app.send_photo(news_channel, thumbnail, caption=msg, parse_mode="MarkdownV2")
+                else:
+                    await app.send_message(news_channel, msg, parse_mode="MarkdownV2")
+                db.sent_news.insert_one({"entry_id": entry_id})
+            except Exception as e:
+                print(f"Failed to send news: {e}")
 
-def extract_image_from_summary(summary):
-    soup = BeautifulSoup(summary, "html.parser")
-    img = soup.find("img")
-    return img["src"] if img else None
-
-def extract_image_from_page(url):
-    try:
-        res = requests.get(url, timeout=5)
-        soup = BeautifulSoup(res.content, "html.parser")
-        meta_img = soup.find("meta", property="og:image")
-        return meta_img["content"] if meta_img else None
-    except:
-        return None
+async def news_feed_loop(app, db, global_settings_collection, urls):
+    while True:
+        await fetch_and_send_news(app, db, global_settings_collection, urls)
+        await asyncio.sleep(30)
