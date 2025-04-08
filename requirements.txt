@@ -1,14 +1,7 @@
-from flask import Flask, request
-from pyrogram import idle
-from bot import app  # Only import Client, NOT start_webhook
-
-flask_app = Flask(__name__)
-
-@flask_app.route("/", methods=["GET", "POST"])
-def index():
-    return "Bot is alive!"
-
-def start_webhook():
-    app.start()
-    print("Bot running...")
-    idle()
+aiohttp
+pyrofork
+pymongo
+python-dotenv
+flask
+tgcrypto
+feedparser
