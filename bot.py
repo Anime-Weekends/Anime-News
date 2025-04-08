@@ -1,190 +1,107 @@
 import asyncio
 import threading
-import aiohttp
 import pymongo
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from config import API_ID, API_HASH, BOT_TOKEN, START_PIC, MONGO_URI, ADMINS
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from config import *
 from webhook import start_webhook
 from modules.rss.rss import news_feed_loop
-from modules.anilist import get_anime_info, get_manga_info
+from modules.anilist import search_anilist
 
-# Database
 mongo_client = pymongo.MongoClient(MONGO_URI)
 db = mongo_client["AnimeNewsBot"]
-user_settings = db["user_settings"]
-global_settings = db["global_settings"]
-sent_news = db["sent_news"]
-
-# Bot Client
+user_settings_collection = db["user_settings"]
+global_settings_collection = db["global_settings"]
 app = Client("AnimeNewsBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Start webhook in a thread
 threading.Thread(target=start_webhook, daemon=True).start()
 
-# Util
-def is_admin(user_id):
-    return user_id in ADMINS
-
-# Start Command
 @app.on_message(filters.command("start"))
-async def start_cmd(client, message):
-    user = message.from_user
+async def start_cmd(_, message):
     buttons = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("ᴍᴀɪɴ ʜᴜʙ", url="https://t.me/Bots_Nation"),
-            InlineKeyboardButton("ꜱᴜᴩᴩᴏʀᴛ", url="https://t.me/Bots_Nation_Support")
-        ],
-        [InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴩᴇʀ", url="https://t.me/darkxside78")]
+        [InlineKeyboardButton("Updates", url="https://t.me/Bots_Nation")],
+        [InlineKeyboardButton("Developer", url="https://t.me/darkxside78")]
     ])
-
-    caption = (
-        f"**» ʙᴀᴋᴋᴀᴀᴀ {user.mention}!!**\n\n"
-        f"> ɪ ᴀᴍ ᴀɴ ᴀɴɪᴍᴇ ɴᴇᴡꜱ ʙᴏᴛ.\n"
-        f"> ɪ ꜰᴇᴛᴄʜ ɴᴇᴡꜱ ꜰʀᴏᴍ ʀꜱꜱ ꜰᴇᴇᴅꜱ & ᴘᴏꜱᴛ ɪᴛ ᴛᴏ ᴄʜᴀɴɴᴇʟꜱ.\n\n"
-        f"_ᴜꜱᴇ /help ᴛᴏ ᴠɪᴇᴡ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅꜱ._"
+    msg = (
+        f"> *Hello {message.from_user.first_name}\\!* \n\n"
+        f"> *I fetch anime news from RSS feeds and post them to configured channels automatically\\.*\n"
+        f"> *Use /help to see commands\\.*"
     )
+    await message.reply_photo(START_PIC, caption=msg, reply_markup=buttons, parse_mode="MarkdownV2")
 
-    await message.reply_photo(START_PIC, caption=caption, reply_markup=buttons)
-
-# /news — Set News Channel
 @app.on_message(filters.command("news"))
-async def set_news_channel(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("🚫 You are not allowed to use this command.")
-    
-    if len(message.command) < 2:
-        return await message.reply("Usage: `/news <channel_username>`", quote=True)
+async def set_news_channel(_, message):
+    if message.from_user.id not in ADMINS:
+        return await message.reply("⛔ Only admins can use this command.")
+    args = message.text.split()
+    if len(args) < 2:
+        return await message.reply("Usage: `/news <channel_username>`", parse_mode="MarkdownV2")
+    global_settings_collection.update_one({"_id": "config"}, {"$set": {"news_channel": args[1]}}, upsert=True)
+    await message.reply(f"> ✅ News channel set to: `{args[1]}`", parse_mode="MarkdownV2")
 
-    channel = message.command[1].strip('@')
-    global_settings.update_one({"_id": "config"}, {"$set": {"news_channel": channel}}, upsert=True)
-    await message.reply(f"✅ News channel set to `@{channel}`")
-
-# /addadmin
-@app.on_message(filters.command("addadmin"))
-async def add_admin(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("🚫 You are not allowed to add admins.")
-    
-    if len(message.command) < 2:
-        return await message.reply("Usage: `/addadmin <user_id>`")
-
-    try:
-        uid = int(message.command[1])
-        if uid in ADMINS:
-            return await message.reply("User is already an admin.")
-        ADMINS.append(uid)
-        await message.reply(f"✅ Added user `{uid}` to admin list.")
-    except:
-        await message.reply("❌ Invalid user ID.")
-
-# /removeadmin
-@app.on_message(filters.command("removeadmin"))
-async def remove_admin(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("🚫 You are not allowed to remove admins.")
-
-    if len(message.command) < 2:
-        return await message.reply("Usage: `/removeadmin <user_id>`")
-
-    try:
-        uid = int(message.command[1])
-        if uid not in ADMINS:
-            return await message.reply("User is not an admin.")
-        ADMINS.remove(uid)
-        await message.reply(f"✅ Removed user `{uid}` from admin list.")
-    except:
-        await message.reply("❌ Invalid user ID.")
-
-# /adminslist
-@app.on_message(filters.command("adminslist"))
-async def list_admins(client, message):
-    admins_text = "\n".join([f"• `{uid}`" for uid in ADMINS])
-    await message.reply(f"**Admin List:**\n\n{admins_text}")
-
-# /addrss
-@app.on_message(filters.command("addrss"))
-async def add_rss(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("🚫 You are not allowed to manage RSS.")
-
-    if len(message.command) < 2:
-        return await message.reply("Usage: `/addrss <rss_url>`")
-
-    url = message.command[1]
-    global_settings.update_one({"_id": "rss"}, {"$addToSet": {"feeds": url}}, upsert=True)
-    await message.reply(f"✅ Added RSS feed:\n`{url}`")
-
-# /removerss
-@app.on_message(filters.command("removerss"))
-async def remove_rss(client, message):
-    if not is_admin(message.from_user.id):
-        return await message.reply("🚫 You are not allowed to manage RSS.")
-
-    if len(message.command) < 2:
-        return await message.reply("Usage: `/removerss <rss_url>`")
-
-    url = message.command[1]
-    global_settings.update_one({"_id": "rss"}, {"$pull": {"feeds": url}})
-    await message.reply(f"❌ Removed RSS feed:\n`{url}`")
-
-# /listrss
-@app.on_message(filters.command("listrss"))
-async def list_rss(client, message):
-    feeds_doc = global_settings.find_one({"_id": "rss"})
-    feeds = feeds_doc.get("feeds", []) if feeds_doc else []
-
-    if not feeds:
-        return await message.reply("ℹ️ No RSS feeds found.")
-
-    txt = "\n".join([f"• {url}" for url in feeds])
-    await message.reply(f"**RSS Feed List:**\n\n{txt}")
-
-# /anime
 @app.on_message(filters.command("anime"))
-async def anime_info(client, message):
-    if len(message.command) < 2:
-        return await message.reply("Usage: `/anime <name>`")
+async def anime_cmd(_, message):
+    query = " ".join(message.text.split()[1:])
+    if not query:
+        return await message.reply("Usage: `/anime <name>`", parse_mode="MarkdownV2")
+    result = await search_anilist(query, "ANIME")
+    if not result:
+        return await message.reply("Not found.")
+    msg = f"> *{result['title']['romaji']}*\n\n>{result['description'][:300]}...\n\n[More info]({result['siteUrl']})"
+    await message.reply_photo(result["coverImage"]["large"], caption=msg, parse_mode="MarkdownV2")
 
-    name = " ".join(message.command[1:])
-    data = await get_anime_info(name)
-
-    if not data:
-        return await message.reply("❌ No anime found.")
-
-    await message.reply_photo(
-        photo=data["image"],
-        caption=f"**{data['title']}**\n\n> {data['description']}\n\nScore: `{data['score']}`\nEpisodes: `{data['episodes']}`\nStatus: `{data['status']}`\n\n[Read More]({data['url']})",
-        disable_web_page_preview=False
-    )
-
-# /manga
 @app.on_message(filters.command("manga"))
-async def manga_info(client, message):
-    if len(message.command) < 2:
-        return await message.reply("Usage: `/manga <name>`")
+async def manga_cmd(_, message):
+    query = " ".join(message.text.split()[1:])
+    if not query:
+        return await message.reply("Usage: `/manga <name>`", parse_mode="MarkdownV2")
+    result = await search_anilist(query, "MANGA")
+    if not result:
+        return await message.reply("Not found.")
+    msg = f"> *{result['title']['romaji']}*\n\n>{result['description'][:300]}...\n\n[More info]({result['siteUrl']})"
+    await message.reply_photo(result["coverImage"]["large"], caption=msg, parse_mode="MarkdownV2")
 
-    name = " ".join(message.command[1:])
-    data = await get_manga_info(name)
+@app.on_message(filters.command(["addadmin", "removeadmin", "adminslist"]))
+async def manage_admins(_, message):
+    if message.from_user.id != OWNER_ID:
+        return await message.reply("Only owner can manage admins.")
+    cmd = message.command[0]
+    if cmd == "addadmin":
+        uid = int(message.text.split()[1])
+        if uid not in ADMINS:
+            ADMINS.append(uid)
+        await message.reply("Admin added.")
+    elif cmd == "removeadmin":
+        uid = int(message.text.split()[1])
+        if uid in ADMINS:
+            ADMINS.remove(uid)
+        await message.reply("Admin removed.")
+    elif cmd == "adminslist":
+        admin_list = "\n".join(f"`{x}`" for x in ADMINS)
+        await message.reply(f"Current admins:\n{admin_list}", parse_mode="MarkdownV2")
 
-    if not data:
-        return await message.reply("❌ No manga found.")
+@app.on_message(filters.command(["addrss", "removerss", "listrss"]))
+async def rss_manage(_, message):
+    if message.from_user.id not in ADMINS:
+        return await message.reply("Only admins can manage RSS feeds.")
+    cmd = message.command[0]
+    if cmd == "addrss":
+        url = message.text.split()[1]
+        db.rss.insert_one({"url": url})
+        await message.reply("RSS feed added.")
+    elif cmd == "removerss":
+        url = message.text.split()[1]
+        db.rss.delete_one({"url": url})
+        await message.reply("RSS feed removed.")
+    elif cmd == "listrss":
+        urls = [doc["url"] for doc in db.rss.find()]
+        await message.reply("Current RSS feeds:\n" + "\n".join(f"- `{u}`" for u in urls), parse_mode="MarkdownV2")
 
-    await message.reply_photo(
-        photo=data["image"],
-        caption=f"**{data['title']}**\n\n> {data['description']}\n\nScore: `{data['score']}`\nChapters: `{data['chapters']}`\nStatus: `{data['status']}`\n\n[Read More]({data['url']})",
-        disable_web_page_preview=False
-    )
-
-# Main
 async def main():
     await app.start()
-    print("Bot is running...")
-
-    rss_config = global_settings.find_one({"_id": "rss"})
-    feeds = rss_config.get("feeds", []) if rss_config else []
-
-    asyncio.create_task(news_feed_loop(app, db, global_settings, feeds))
+    print("Bot running...")
+    urls = [URL_A] + [doc["url"] for doc in db.rss.find()]
+    asyncio.create_task(news_feed_loop(app, db, global_settings_collection, urls))
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
