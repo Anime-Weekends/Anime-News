@@ -1,7 +1,7 @@
-git+https://Anime-Weekends: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@github.com/ItsDeltin/pyrofork.git
-Flask==2.3.3
-feedparser==6.0.11
-pymongo[srv]==4.6.3
-dnspython==2.5.0
-aiohttp==3.9.3
-beautifulsoup4==4.12.3
+git+https://github.com/Awesome-RJ/pyrofork.git
+flask
+aiohttp
+pymongo
+feedparser
+python-dotenv
+tgcrypto
