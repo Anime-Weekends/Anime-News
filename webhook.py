@@ -1,17 +1,14 @@
-# webhook.py
+from flask import Flask, jsonify
 
-from flask import Flask, request
-from config import BOT_TOKEN
-from bot import app  # Make sure bot.py defines "app" as your Pyrofork client
+app = Flask(__name__)
 
-web = Flask(__name__)
+@app.route("/")
+def root_route_handler():
+    return jsonify("DARKXSIDE78 - The darkness shall follow my command")
 
-@web.route(f"/{BOT_TOKEN}", methods=["POST"])
-def telegram_webhook():
-    update = request.get_json()
-    if update:
-        app.receive_update(update)
-    return "OK", 200
+@app.route("/health")
+def health_check():
+    return jsonify({"status": "OK"})
 
-if __name__ == "__main__":
-    web.run(host="0.0.0.0", port=8000)
+def start_webhook():
+    app.run(host="0.0.0.0", port=8000, threaded=True)
