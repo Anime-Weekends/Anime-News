@@ -1,7 +1,6 @@
 pyrofork
 flask
-aiohttp
 pymongo
 feedparser
+requests
 python-dotenv
-tgcrypto
